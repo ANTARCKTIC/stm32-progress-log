@@ -1,0 +1,16 @@
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+
+/build/
+
+# IDE/editor junk
+.vscode/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db

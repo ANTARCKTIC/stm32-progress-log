@@ -7,8 +7,8 @@ SIZE = arm-none-eabi-size
 # --- EDIT THESE PATHS to match your actual F411 folder names ---
 INC_DIR = ../../common/F411/STMicroelectronics-cmsis-device-f4-master-Include
 CMSIS_INC_DIR = ../../common/F411/CMSIS_Include
-STARTUP = ../../common/F411/STMicroelectronics-cmsis-device-f4 master Source-Templates/gcc/startup_stm32f411xe.s
-SYSTEM_SRC = ../../common/F411/STMicroelectronics-cmsis-device-f4 master Source-Templates/system_stm32f4xx.c
+STARTUP = ../../common/F411/STMicroelectronics-cmsis-device-f4-master-Source-Templates/gcc/startup_stm32f411xe.s
+SYSTEM_SRC = ../../common/F411/STMicroelectronics-cmsis-device-f4-master-Source-Templates/system_stm32f4xx.c
 LDSCRIPT = ../../common/F411/F411_Linker.ld
 
 SRCS = src/main.c $(STARTUP) $(SYSTEM_SRC)

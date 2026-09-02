@@ -13,7 +13,7 @@ SECTIONS{
         _sdata = .;
         *(.first_data)
         *(.data SORT(.data.*))
-        _edata= .;
+        _edata = .;
     } > sram AT > flash
     _sidata = LOADADDR(.data);
 

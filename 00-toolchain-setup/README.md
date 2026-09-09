@@ -37,7 +37,7 @@ common/
 ```
 
 CMSIS headers and startup files were pulled directly from ST's official
-GitHub repos, not copied from a tutorial's zip file — kept at the repo
+GitHub repos — kept at the repo
 root under `common/` so every chapter can reference them by relative path
 instead of duplicating them per-chapter.
 

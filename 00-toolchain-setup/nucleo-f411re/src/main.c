@@ -1,3 +1,5 @@
+//read the readme.md file
+
 #include "stm32f4xx.h"
 
 int main(void)

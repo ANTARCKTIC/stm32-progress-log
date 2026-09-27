@@ -27,9 +27,11 @@ void GPIO_Init(void)
 
     // PA6, PA7 -> output
     GPIOA->MODER &= ~(GPIO_MODER_MODER6_Msk |
+                      GPIO_MODER_MODER5_Msk |
                       GPIO_MODER_MODER7_Msk);
 
     GPIOA->MODER |= GPIO_MODER_MODER6_0 |
+                    GPIO_MODER_MODER5_0 |
                     GPIO_MODER_MODER7_0;
 
     // PC0 -> input with pull-down
@@ -37,6 +39,9 @@ void GPIO_Init(void)
 
     GPIOC->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
     GPIOC->PUPDR |= GPIO_PUPDR_PUPD0_1;
+
+
+    GPIOA->ODR = GPIO_ODR_OD5;
 }
 
 void EXTI0_Init(void)
@@ -54,7 +59,7 @@ void EXTI0_Init(void)
     EXTI->RTSR |= EXTI_RTSR_TR0;
 
     // Falling edge disabled
-    EXTI->FTSR &= ~EXTI_FTSR_TR0;
+    EXTI->FTSR |= EXTI_FTSR_TR0;
 
     // Clear pending flag
     EXTI->PR = EXTI_PR_PR0;
@@ -81,14 +86,16 @@ void EXTI0_IRQHandler(void)
     {
         EXTI->PR = EXTI_PR_PR0;
 
-        GPIOA->ODR ^= GPIO_ODR_OD7;
+         if (GPIOC->IDR & GPIO_IDR_ID0)
+        {
+            GPIOA->ODR ^= GPIO_ODR_OD7;
+        }
+        else
+        {
+            GPIOA->ODR ^= GPIO_ODR_OD5;
+        }
 
-        delay(5000000);
-
-        GPIOA->ODR ^= GPIO_ODR_OD7;
     }
 }
 
-void SysTick_Handler(void) {
-    
-}
+void SysTick_Handler(void) {}

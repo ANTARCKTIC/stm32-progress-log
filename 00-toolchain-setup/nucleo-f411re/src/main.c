@@ -11,9 +11,7 @@ int main(void)
 
     while (1)
     {
-        GPIOA->ODR ^= GPIO_ODR_OD5; /*toggle on and off bit 5*/
-
-        for (volatile uint32_t i = 0; i < 1000000; i++) { }
+        GPIOA->ODR ^= GPIO_ODR_OD5; /*toggle on and off bit 5*/for (volatile uint32_t i = 0; i < 1000000; i++) { }
     }
 }
 

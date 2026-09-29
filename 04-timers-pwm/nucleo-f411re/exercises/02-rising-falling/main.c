@@ -5,8 +5,8 @@
 #define TIM_ARR        999U     /* 1 MHz / 1000 = 1 kHz PWM */
 
 #define DUTY_CH1       65U     /* PB6 -> 50% */
-#define DUTY_CH2       500U     /* PB7 -> 80% */
-#define DUTY_CH3       5625U     /* PB8 -> 10% */
+#define DUTY_CH2       400U     /* PB7 -> 80% */
+#define DUTY_CH3       1000U     /* PB8 -> 10% */
 
 #define PWM_AF         2U       /* AF2 = TIM3..TIM5 */
 

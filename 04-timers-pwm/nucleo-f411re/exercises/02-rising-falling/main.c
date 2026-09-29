@@ -1,101 +1,114 @@
 #include "stm32f4xx.h"
-#include "core_cm4.h"
 
-void GPIO_Init(void);
-void EXTI0_Init(void);
-void NVIC_Init(void);
-void delay(volatile uint32_t count);
+/* ---------- Config ---------- */
+#define TIM_PSC        49U      /* 50 MHz / 50 = 1 MHz tick */
+#define TIM_ARR        999U     /* 1 MHz / 1000 = 1 kHz PWM */
 
-void EXTI0_IRQHandler(void);
+#define DUTY_CH1       65U     /* PB6 -> 50% */
+#define DUTY_CH2       500U     /* PB7 -> 80% */
+#define DUTY_CH3       5625U     /* PB8 -> 10% */
+
+#define PWM_AF         2U       /* AF2 = TIM3..TIM5 */
+
+/* ---------- Prototypes ---------- */
+static void CLOCK_Init(void);
+static void GPIO_Init(void);
+static void TIMER_Init(void);
 
 int main(void)
 {
+    CLOCK_Init();
     GPIO_Init();
-    EXTI0_Init();
-    NVIC_Init();
+    TIMER_Init();
 
     while (1)
     {
-        GPIOA->ODR ^= GPIO_ODR_OD6;
-        delay(1000000);
+        /* timer hardware drives the pins */
     }
 }
 
-void GPIO_Init(void)
+/* ---------- Clock: HSI 16 MHz -> PLL -> 100 MHz SYSCLK ---------- */
+static void CLOCK_Init(void)
 {
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOAEN;
+    /* Voltage scaling: needed for 100 MHz (check your device's reference manual) */
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+    PWR->CR |= PWR_CR_VOS;
 
-    // PA6, PA7 -> output
-    GPIOA->MODER &= ~(GPIO_MODER_MODER6_Msk |
-                      GPIO_MODER_MODER5_Msk |
-                      GPIO_MODER_MODER7_Msk);
+    RCC->CR |= RCC_CR_HSION;
+    while (!(RCC->CR & RCC_CR_HSIRDY));
 
-    GPIOA->MODER |= GPIO_MODER_MODER6_0 |
-                    GPIO_MODER_MODER5_0 |
-                    GPIO_MODER_MODER7_0;
+    FLASH->ACR = FLASH_ACR_ICEN | FLASH_ACR_DCEN |
+                 FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_3WS;
 
-    // PC0 -> input with pull-down
-    GPIOC->MODER &= ~GPIO_MODER_MODER0_Msk;
+    /* HSI/8 = 2 MHz, x100 = 200 MHz VCO, /2 = 100 MHz */
+    RCC->PLLCFGR = (8U   << RCC_PLLCFGR_PLLM_Pos) |
+                   (100U << RCC_PLLCFGR_PLLN_Pos) |
+                   (0U   << RCC_PLLCFGR_PLLP_Pos) |
+                   (4U   << RCC_PLLCFGR_PLLQ_Pos);
 
-    GPIOC->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
-    GPIOC->PUPDR |= GPIO_PUPDR_PUPD0_1;
+    /* AHB /1, APB1 /4 (25 MHz, timers x2 = 50 MHz), APB2 /1 */
+    RCC->CFGR &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+    RCC->CFGR |= RCC_CFGR_PPRE1_DIV4;
 
+    RCC->CR |= RCC_CR_PLLON;
+    while (!(RCC->CR & RCC_CR_PLLRDY));
 
-    GPIOA->ODR = GPIO_ODR_OD5;
+    RCC->CFGR &= ~RCC_CFGR_SW;
+    RCC->CFGR |= RCC_CFGR_SW_PLL;
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
+
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+    RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+    (void)RCC->APB1ENR;     /* dummy read: let the clock enable settle */
 }
 
-void EXTI0_Init(void)
+/* ---------- GPIO: PB6/PB7/PB8 = TIM4 CH1/CH2/CH3 (AF2) ---------- */
+static void GPIO_Init(void)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    /* Mode = 10 (alternate function). Two bits per pin. */
+    GPIOB->MODER &= ~((3U << (2*6)) | (3U << (2*7)) | (3U << (2*8)));
+    GPIOB->MODER |=  ((2U << (2*6)) | (2U << (2*7)) | (2U << (2*8)));
 
-    // Connect EXTI0 to PC0
-    SYSCFG->EXTICR[0] &= ~SYSCFG_EXTICR1_EXTI0;
-    SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PC;
+    /* Push-pull, low speed, no pull */
+    GPIOB->OTYPER  &= ~((1U << 6) | (1U << 7) | (1U << 8));
+    GPIOB->OSPEEDR &= ~((3U << (2*6)) | (3U << (2*7)) | (3U << (2*8)));
+    GPIOB->PUPDR   &= ~((3U << (2*6)) | (3U << (2*7)) | (3U << (2*8)));
 
-    // Enable EXTI0
-    EXTI->IMR |= EXTI_IMR_MR0;
+    /* AFR[0] covers pins 0-7 (4 bits each): PB6, PB7 */
+    GPIOB->AFR[0] &= ~((0xFU << (4*6)) | (0xFU << (4*7)));
+    GPIOB->AFR[0] |=  ((PWM_AF << (4*6)) | (PWM_AF << (4*7)));
 
-    // Rising edge
-    EXTI->RTSR |= EXTI_RTSR_TR0;
-
-    // Falling edge disabled
-    EXTI->FTSR |= EXTI_FTSR_TR0;
-
-    // Clear pending flag
-    EXTI->PR = EXTI_PR_PR0;
+    /* AFR[1] covers pins 8-15: PB8 is index 0 here, not 8 */
+    GPIOB->AFR[1] &= ~(0xFU << (4*(8-8)));
+    GPIOB->AFR[1] |=  (PWM_AF << (4*(8-8)));
 }
 
-void NVIC_Init(void)
+/* ---------- TIM4: 1 kHz, three PWM channels ---------- */
+static void TIMER_Init(void)
 {
-    NVIC_ClearPendingIRQ(EXTI0_IRQn);
-    NVIC_SetPriority(EXTI0_IRQn, 5);
-    NVIC_EnableIRQ(EXTI0_IRQn);
+    TIM4->PSC = TIM_PSC;
+    TIM4->ARR = TIM_ARR;
+
+    TIM4->CCR1 = DUTY_CH1;   /* PB6 */
+    TIM4->CCR2 = DUTY_CH2;   /* PB7 */
+    TIM4->CCR3 = DUTY_CH3;   /* PB8 */
+
+    /* CH1 + CH2 are in CCMR1: output mode, PWM mode 1 (110), preload on */
+    TIM4->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_OC1M |
+                     TIM_CCMR1_CC2S | TIM_CCMR1_OC2M);
+    TIM4->CCMR1 |=  (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE |
+                     TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2PE);
+
+    /* CH3 is in CCMR2 */
+    TIM4->CCMR2 &= ~(TIM_CCMR2_CC3S | TIM_CCMR2_OC3M);
+    TIM4->CCMR2 |=  (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3PE);
+
+    /* Enable the three outputs */
+    TIM4->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E);
+
+    TIM4->CR1 |= TIM_CR1_ARPE;   /* buffer ARR */
+    TIM4->EGR  = TIM_EGR_UG;     /* load PSC/ARR/CCRx into shadow registers */
+    TIM4->SR   = 0;
+
+    TIM4->CR1 |= TIM_CR1_CEN;
 }
-
-void delay(volatile uint32_t count)
-{
-    while (count--)
-    {
-        __NOP();
-    }
-}
-
-void EXTI0_IRQHandler(void)
-{
-    if (EXTI->PR & EXTI_PR_PR0)
-    {
-        EXTI->PR = EXTI_PR_PR0;
-
-         if (GPIOC->IDR & GPIO_IDR_ID0)
-        {
-            GPIOA->ODR ^= GPIO_ODR_OD7;
-        }
-        else
-        {
-            GPIOA->ODR ^= GPIO_ODR_OD5;
-        }
-
-    }
-}
-
-void SysTick_Handler(void) {}

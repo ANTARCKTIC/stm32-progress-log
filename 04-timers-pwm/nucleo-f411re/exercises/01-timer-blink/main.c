@@ -17,9 +17,9 @@ int main(void)
     while (1)
     {
         if (ticks >= 10) GPIOA->BSRR = GPIO_BSRR_BS5;
-        if (ticks >= 15) GPIOA->BSRR = GPIO_BSRR_BS6;
-        if (ticks >= 17) GPIOA->BSRR = GPIO_BSRR_BS7;
-        if (ticks >= 60)
+        if (ticks >= 20) GPIOA->BSRR = GPIO_BSRR_BS6;
+        if (ticks >= 30) GPIOA->BSRR = GPIO_BSRR_BS7;
+        if (ticks >= 40)
         {
         GPIOA->BSRR = LEDS_OFF;
         ticks = 0;

@@ -6,7 +6,7 @@
 
 #define DUTY_CH1       65U     /* PB6 -> 50% */
 #define DUTY_CH2       400U     /* PB7 -> 80% */
-#define DUTY_CH3       1000U     /* PB8 -> 10% */
+#define DUTY_CH3       900U     /* PB8 -> 10% */
 
 #define PWM_AF         2U       /* AF2 = TIM3..TIM5 */
 

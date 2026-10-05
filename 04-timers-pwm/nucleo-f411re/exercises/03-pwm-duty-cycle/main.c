@@ -1,5 +1,8 @@
 #include "stm32f4xx.h"
 
+volatile uint32_t duty = 0U;
+volatile int direction = 1U;
+
 /* ---------- Config ---------- */
 #define TIM_PSC        49U      /* 50 MHz / 50 = 1 MHz tick */
 #define TIM_ARR        999U     /* 1 MHz / 1000 = 1 kHz PWM */
@@ -59,6 +62,7 @@ static void CLOCK_Init(void)
 
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
     RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
     (void)RCC->APB1ENR;     /* dummy read: let the clock enable settle */
 }
 
@@ -85,13 +89,24 @@ static void GPIO_Init(void)
 
 /* ---------- TIM4: 1 kHz, three PWM channels ---------- */
 static void TIMER_Init(void)
-{
+{   
+    TIM2->PSC = 4999;
+    TIM2->ARR = 99;
+    TIM2->EGR = TIM_EGR_UG;          // load PSC/ARR now
+    TIM2->SR  = 0;                   // clear the flag that UG just set
+    TIM2->DIER |= TIM_DIER_UIE;      // update interrupt enable
+
+    NVIC_SetPriority(TIM2_IRQn, 1);
+    NVIC_EnableIRQ(TIM2_IRQn);
+
+            // start
+
     TIM4->PSC = TIM_PSC;
     TIM4->ARR = TIM_ARR;
 
-    TIM4->CCR1 = DUTY_CH1;   /* PB6 */
-    TIM4->CCR2 = DUTY_CH2;   /* PB7 */
-    TIM4->CCR3 = DUTY_CH3;   /* PB8 */
+    TIM4->CCR1 = duty;   /* PB6 */
+    TIM4->CCR2 = duty;   /* PB7 */
+    TIM4->CCR3 = duty;   /* PB8 */
 
     /* CH1 + CH2 are in CCMR1: output mode, PWM mode 1 (110), preload on */
     TIM4->CCMR1 &= ~(TIM_CCMR1_CC1S | TIM_CCMR1_OC1M |
@@ -111,4 +126,22 @@ static void TIMER_Init(void)
     TIM4->SR   = 0;
 
     TIM4->CR1 |= TIM_CR1_CEN;
+    TIM2->CR1 |= TIM_CR1_CEN;
+}
+void TIM2_IRQHandler(void)
+{
+    // remember to clear TIM2->SR UIF here, or it retriggers forever
+    if (TIM2->SR & TIM_SR_UIF)
+    {
+        TIM2->SR &= ~TIM_SR_UIF;
+        duty+=10U*direction;
+
+        if(duty>=900U || duty<=0){
+            direction*= -1;
+        }
+        TIM4->CCR1 = duty;
+        TIM4->CCR2 = duty;
+        TIM4->CCR3 = duty;
+        
+    }
 }

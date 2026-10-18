@@ -12,14 +12,14 @@ That method worked well here because GPIO is a small, self-contained peripheral.
 
 ## Registers covered
 
-| Register       | Job                                                                           | Used in |
-| -------------- | ----------------------------------------------------------------------------- | ------- |
-| `RCC->AHB1ENR` | Enables the port clock. Nothing works without it.                             | all     |
-| `GPIOx->MODER` | 2 bits per pin: `00` input, `01` output, `10` alternate function, `11` analog | all     |
-| `GPIOx->ODR`   | Output data. Read/modify/write to change pins.                                | 01      |
-| `GPIOx->BSRR`  | Write-only set/reset. Bits 0-15 set a pin, bits 16-31 reset it.               | 02      |
-| `GPIOx->IDR`   | Read the actual pin level.                                                    | 03, 04  |
-| `GPIOx->PUPDR` | 2 bits per pin: `00` none, `01` pull-up, `10` pull-down                       | 04      |
+| Register       | Job                                                                           |
+| -------------- | ----------------------------------------------------------------------------- |
+| `RCC->AHB1ENR` | Enables the port clock. Nothing works without it.                             |
+| `GPIOx->MODER` | 2 bits per pin: `00` input, `01` output, `10` alternate function, `11` analog |
+| `GPIOx->ODR`   | Output data. Read/modify/write to change pins.                                |
+| `GPIOx->BSRR`  | Write-only set/reset. Bits 0-15 set a pin, bits 16-31 reset it.               |
+| `GPIOx->IDR`   | Read the actual pin level.                                                    |
+| `GPIOx->PUPDR` | 2 bits per pin: `00` none, `01` pull-up, `10` pull-down                       |
 
 ## Exercises
 

@@ -80,10 +80,6 @@ I read about these but did not build exercises for them. Noting them here so the
 
 - TODO: add anything that bit you during these exercises.
 
-## A note on the Blue Pill
-
-The Blue Pill (STM32F103) is on hold, but it's worth knowing the code in this chapter **will not port directly**. The F1 series has no `MODER` or `PUPDR`. Pin mode and pull configuration live in `CRL` / `CRH` (4 bits per pin), and the pull-up vs pull-down choice is made through `ODR`. Same ideas, different registers. This will be a good exercise when I get back to it.
-
 ## Status
 
 - Nucleo-F411RE: all four exercises done and verified on hardware.

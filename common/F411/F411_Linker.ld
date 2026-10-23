@@ -73,6 +73,8 @@ SECTIONS
         _ebss = .;
     } > sram
 
+    
+    PROVIDE(end = .);
     . = ALIGN(8);
     _end = .;
 }

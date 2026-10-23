@@ -82,7 +82,7 @@ char uart2_read(void)
 int main(void)
 {
     SysTick_Config(SystemCoreClock / 1000U);
-    uart2_init(115200);
+    uart2_init(9600);
 
     uart2_write_string("\r\nUSART2 up\r\n");
 
